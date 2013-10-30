@@ -333,10 +333,13 @@ pcl::gpu::KinfuTracker::operator() (const DepthMap& depth_raw,
 
             if (fabs (det) < 1e-15 || pcl_isnan (det))
             {
-              if (pcl_isnan (det)) cout << "qnan" << endl;
-
-              reset ();
+              if (pcl_isnan (det)) cout << "determinant is nan" << endl;
+              cout << "t:" << global_time_ << " level:" << level_index << " unreasonable determinant from matrix:" << endl << A << endl; 
+              reset();
               return (false);
+            }
+            else {
+              cout << "t:" << global_time_ << " level:" << level_index << ": got reasonable determinant of " << det << ", continuing." << endl;
             }
             //float maxc = A.maxCoeff();
 
