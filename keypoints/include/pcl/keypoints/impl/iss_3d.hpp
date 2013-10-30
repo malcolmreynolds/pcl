@@ -433,7 +433,12 @@ pcl::ISSKeypoint3D<PointInT, PointOutT, NormalT>::detectKeypoints (PointCloudOut
 #ifdef _OPENMP
 #pragma omp critical
 #endif
-      output.points.push_back(input_->points[index]);
+    {
+      PointOutT p;
+      p.getVector3fMap () = input_->points[index].getVector3fMap ();
+      output.points.push_back(p);
+      keypoints_indices_->indices.push_back (index);
+    }
   }
 
   output.header = input_->header;
