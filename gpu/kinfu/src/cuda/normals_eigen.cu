@@ -139,7 +139,7 @@ pcl::device::computeNormalsEigen (const MapArr& vmap, MapArr& nmap)
 
   nmap.create (vmap.rows (), vmap.cols ());
 
-  dim3 block (32, 8);
+  dim3 block (16, 8);
   dim3 grid (1, 1, 1);
   grid.x = divUp (cols, block.x);
   grid.y = divUp (rows, block.y);

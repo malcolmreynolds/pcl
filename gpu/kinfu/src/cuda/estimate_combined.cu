@@ -71,7 +71,7 @@ namespace pcl
     {
       enum
       {
-        CTA_SIZE_X = 32,
+        CTA_SIZE_X = 16,
         CTA_SIZE_Y = 8,
         CTA_SIZE = CTA_SIZE_X * CTA_SIZE_Y
       };
