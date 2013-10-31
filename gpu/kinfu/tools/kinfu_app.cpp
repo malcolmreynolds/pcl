@@ -909,10 +909,11 @@ struct KinFuApp
     ofstream cam_output_file;
     cam_output_file.open("camera_paths.py");
     cam_output_file << "# " << num_frames_executed_ << " camera positions exported from Kinfu" << endl;
-    cam_output_file << "[" << endl;
+    cam_output_file << "import numpy as np"
+    cam_output_file << "camera_paths = [" << endl;
     unsigned int counter = 0;
     for (std::vector<Eigen::Affine3f>::const_iterator it = cam_positions_.begin(); it != cam_positions_.end(); ++it) {
-      cam_output_file << "camera_paths = np.array([["
+      cam_output_file << "np.array([["
           << (*it)(0, 0) << ", " << (*it)(0, 1) << ", "
           << (*it)(0, 2) << ", " << (*it)(0, 3) << "], # cam " << counter << endl << "          ["
           << (*it)(1, 0) << ", " << (*it)(1, 1) << ", "
