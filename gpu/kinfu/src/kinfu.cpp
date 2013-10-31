@@ -63,6 +63,8 @@ using Eigen::Array3f;
 using Eigen::Vector3i;
 using Eigen::Vector3f;
 
+typedef double float_type;
+
 namespace pcl
 {
   namespace gpu
@@ -313,8 +315,8 @@ pcl::gpu::KinfuTracker::operator() (const DepthMap& depth_raw,
             Mat33&  device_Rcurr = device_cast<Mat33> (Rcurr);
             float3& device_tcurr = device_cast<float3>(tcurr);
 
-            Eigen::Matrix<double, 6, 6, Eigen::RowMajor> A;
-            Eigen::Matrix<double, 6, 1> b;
+            Eigen::Matrix<float, 6, 6, Eigen::RowMajor> A;
+            Eigen::Matrix<float, 6, 1> b;
     #if 0
             device::tranformMaps(vmap_curr, nmap_curr, device_Rcurr, device_tcurr, vmap_g_curr, nmap_g_curr);
             findCoresp(vmap_g_curr, nmap_g_curr, device_Rprev_inv, device_tprev, intr(level_index), vmap_g_prev, nmap_g_prev, distThres_, angleThres_, coresp);
@@ -329,7 +331,7 @@ pcl::gpu::KinfuTracker::operator() (const DepthMap& depth_raw,
                               vmap_g_prev, nmap_g_prev, distThres_, angleThres_, gbuf_, sumbuf_, A.data (), b.data ());
     #endif
             //checking nullspace
-            double det = A.determinant ();
+            float det = A.determinant ();
 
             if (fabs (det) < 1e-15 || pcl_isnan (det))
             {
@@ -338,9 +340,9 @@ pcl::gpu::KinfuTracker::operator() (const DepthMap& depth_raw,
               reset();
               return (false);
             }
-            else {
-              cout << "t:" << global_time_ << " level:" << level_index << ": got reasonable determinant of " << det << ", continuing." << endl;
-            }
+            // else {
+            //   cout << "t:" << global_time_ << " level:" << level_index << ": got reasonable determinant of " << det << ", continuing." << endl;
+            // }
             //float maxc = A.maxCoeff();
 
             Eigen::Matrix<float, 6, 1> result = A.llt ().solve (b).cast<float>();
@@ -575,30 +577,30 @@ namespace pcl
       Eigen::JacobiSVD<Eigen::Matrix3f> svd(matrix, Eigen::ComputeFullV | Eigen::ComputeFullU);    
       Eigen::Matrix3f R = svd.matrixU() * svd.matrixV().transpose();
 
-      double rx = R(2, 1) - R(1, 2);
-      double ry = R(0, 2) - R(2, 0);
-      double rz = R(1, 0) - R(0, 1);
+      float rx = R(2, 1) - R(1, 2);
+      float ry = R(0, 2) - R(2, 0);
+      float rz = R(1, 0) - R(0, 1);
 
-      double s = sqrt((rx*rx + ry*ry + rz*rz)*0.25);
-      double c = (R.trace() - 1) * 0.5;
+      float s = sqrt((rx*rx + ry*ry + rz*rz)*0.25);
+      float c = (R.trace() - 1) * 0.5;
       c = c > 1. ? 1. : c < -1. ? -1. : c;
 
-      double theta = acos(c);
+      float theta = acos(c);
 
       if( s < 1e-5 )
       {
-        double t;
+        float t;
 
         if( c > 0 )
           rx = ry = rz = 0;
         else
         {
           t = (R(0, 0) + 1)*0.5;
-          rx = sqrt( std::max(t, 0.0) );
+          rx = sqrt( fmax(t, 0.0) );
           t = (R(1, 1) + 1)*0.5;
-          ry = sqrt( std::max(t, 0.0) ) * (R(0, 1) < 0 ? -1.0 : 1.0);
+          ry = sqrt( fmax(t, 0.0) ) * (R(0, 1) < 0 ? -1.0 : 1.0);
           t = (R(2, 2) + 1)*0.5;
-          rz = sqrt( std::max(t, 0.0) ) * (R(0, 2) < 0 ? -1.0 : 1.0);
+          rz = sqrt( fmax(t, 0.0) ) * (R(0, 2) < 0 ? -1.0 : 1.0);
 
           if( fabs(rx) < fabs(ry) && fabs(rx) < fabs(rz) && (R(1, 2) > 0) != (ry*rz > 0) )
             rz = -rz;
@@ -610,7 +612,7 @@ namespace pcl
       }
       else
       {
-        double vth = 1/(2*s);
+        float vth = 1/(2*s);
         vth *= theta;
         rx *= vth; ry *= vth; rz *= vth;
       }

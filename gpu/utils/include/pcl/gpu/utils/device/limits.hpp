@@ -210,19 +210,19 @@ namespace pcl
             static const bool is_signed = true;
         };
 
-        template<> struct numeric_limits<double>
-        {
-            typedef double type;
-            __device__ __forceinline__ static type min() { return 2.2250738585072014e-308/*DBL_MIN*/; };
-            __device__ __forceinline__ static type max() { return 1.7976931348623158e+308/*DBL_MAX*/; };
-			__device__ __forceinline__ static type epsilon() { return 2.2204460492503131e-016 /*DBL_EPSILON*/; };
-            __device__ __forceinline__ static type round_error();
-            __device__ __forceinline__ static type denorm_min();
-            __device__ __forceinline__ static type infinity();
-            __device__ __forceinline__ static type quiet_NaN();
-            __device__ __forceinline__ static type signaling_NaN();
-            static const bool is_signed = true;
-        };
+   //      template<> struct numeric_limits<double>
+   //      {
+   //          typedef double type;
+   //          __device__ __forceinline__ static type min() { return 2.2250738585072014e-308/*DBL_MIN*/; };
+   //          __device__ __forceinline__ static type max() { return 1.7976931348623158e+308/*DBL_MAX*/; };
+			// __device__ __forceinline__ static type epsilon() { return 2.2204460492503131e-016 DBL_EPSILON; };
+   //          __device__ __forceinline__ static type round_error();
+   //          __device__ __forceinline__ static type denorm_min();
+   //          __device__ __forceinline__ static type infinity();
+   //          __device__ __forceinline__ static type quiet_NaN();
+   //          __device__ __forceinline__ static type signaling_NaN();
+   //          static const bool is_signed = true;
+   //      };
     }
 }
 #endif /* PCL_DEVICE_NUMERIC_LIMITS_HPP_ */

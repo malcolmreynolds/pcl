@@ -907,20 +907,20 @@ struct KinFuApp
   void
   save_camera_paths() const {
     ofstream cam_output_file;
-    cam_output_file.open("camera_paths_.txt");
+    cam_output_file.open("camera_paths.py");
     cam_output_file << "# " << num_frames_executed_ << " camera positions exported from Kinfu" << endl;
     cam_output_file << "[" << endl;
     unsigned int counter = 0;
-    for (std::vector<const Eigen::Affine3f>::iterator it = cam_positions_.begin(); it != cam_positions_.end(); ++it) {
-      cam_output_file << "np.array([["
-          << (*it)(0, 0) << " " << (*it)(0, 1) << " "
-          << (*it)(0, 2) << " " << (*it)(0, 3) << "], # cam " << counter << endl << "          ["
-          << (*it)(1, 0) << " " << (*it)(1, 1) << " "
-          << (*it)(1, 2) << " " << (*it)(1, 3) << "]," << endl << "          ["
-          << (*it)(2, 0) << " " << (*it)(2, 1) << " "
-          << (*it)(2, 2) << " " << (*it)(2, 3) << "]," << endl << "          ["
-          << (*it)(3, 0) << " " << (*it)(3, 1) << " "
-          << (*it)(3, 2) << " " << (*it)(3, 3) << "]]),"  << endl;
+    for (std::vector<Eigen::Affine3f>::const_iterator it = cam_positions_.begin(); it != cam_positions_.end(); ++it) {
+      cam_output_file << "camera_paths = np.array([["
+          << (*it)(0, 0) << ", " << (*it)(0, 1) << ", "
+          << (*it)(0, 2) << ", " << (*it)(0, 3) << "], # cam " << counter << endl << "          ["
+          << (*it)(1, 0) << ", " << (*it)(1, 1) << ", "
+          << (*it)(1, 2) << ", " << (*it)(1, 3) << "]," << endl << "          ["
+          << (*it)(2, 0) << ", " << (*it)(2, 1) << ", "
+          << (*it)(2, 2) << ", " << (*it)(2, 3) << "]," << endl << "          ["
+          << (*it)(3, 0) << ", " << (*it)(3, 1) << ", "
+          << (*it)(3, 2) << ", " << (*it)(3, 3) << "]]),"  << endl;
       counter++;
     }
     cam_output_file << "]" << endl;
@@ -1030,6 +1030,7 @@ struct KinFuApp
     cout << "    M    : toggle cloud exctraction mode" << endl;
     cout << "    N    : toggle normals exctraction" << endl;
     cout << "    I    : toggle independent camera mode" << endl;
+    cout << "    K    : export all cameras" << endl;
     cout << "    B    : toggle volume bounds" << endl;
     cout << "    *    : toggle scene view painting ( requires registration mode )" << endl;
     cout << "    C    : clear clouds" << endl;    

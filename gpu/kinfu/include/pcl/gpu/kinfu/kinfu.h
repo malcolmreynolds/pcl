@@ -249,9 +249,9 @@ namespace pcl
         DeviceArray2D<float> depthRawScaled_;
         
         /** \brief Temporary buffer for ICP */
-        DeviceArray2D<double> gbuf_;
+        DeviceArray2D<float> gbuf_;
         /** \brief Buffer to store MLS matrix. */
-        DeviceArray<double> sumbuf_;
+        DeviceArray<float> sumbuf_;
 
         /** \brief Array of camera rotation matrices for each moment of time. */
         std::vector<Matrix3frm> rmats_;

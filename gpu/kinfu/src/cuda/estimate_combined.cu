@@ -43,7 +43,7 @@ namespace pcl
 {
   namespace device
   {
-    typedef double float_type;
+    typedef float float_type;
 
     template<int CTA_SIZE_, typename T>
     static __device__ __forceinline__ void reduce(volatile T* buffer)
@@ -212,7 +212,10 @@ namespace pcl
     {
       enum
       {
-        CTA_SIZE = 512,
+        // This used to be 512 - presumably related to the
+        // CTA_SIZE_X = 32, CTA_SIZE_Y=8 we used to have above?
+        // I've changed it to 256 because I've halved the above about.
+        CTA_SIZE = 256,
         STRIDE = CTA_SIZE,
 
         B = 6, COLS = 6, ROWS = 6, DIAG = 6,
