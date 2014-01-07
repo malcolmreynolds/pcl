@@ -647,7 +647,7 @@ struct KinFuApp
   enum { PCD_BIN = 1, PCD_ASCII = 2, PLY = 3, MESH_PLY = 7, MESH_VTK = 8 };
   
   KinFuApp(pcl::Grabber& source, float vsz, int icp, int viz) : exit_ (false), scan_ (false), scan_mesh_(false), scan_volume_ (false), independent_camera_ (false),
-    registration_ (false), integrate_colors_ (false), focal_length_(-1.f), capture_ (source), scene_cloud_view_(viz), image_view_(viz), time_ms_(0), icp_(icp), viz_(viz)
+    registration_ (false), integrate_colors_ (false), focal_length_(-1.f), capture_ (source), scene_cloud_view_(viz), image_view_(viz), time_ms_(0), num_frames_executed_(0), icp_(icp), viz_(viz)
   {    
     //Init Kinfu Tracker
     Eigen::Vector3f volume_size = Vector3f::Constant (vsz/*meters*/);    
@@ -913,6 +913,59 @@ struct KinFuApp
     data_ready_cond_.notify_one();
   }
 
+  void
+  store_camera_position() {
+    // getCameraPose() with no arguments
+    cam_positions_.push_back(kinfu_.getCameraPose());
+    if (cam_positions_.size() != num_frames_executed_) {
+      cout << "ERROR! cam_positions_.size() ="
+        << cam_positions_.size()
+        << " but num_frames_executed_ ="
+        << num_frames_executed_ << endl;
+    }
+  }
+
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  void
+  save_camera_paths() const {
+    ofstream cam_output_file;
+    cam_output_file.open("camera_paths.py");
+    cam_output_file << "#!/usr/bin/env python" << endl;
+    cam_output_file << "# " << num_frames_executed_ << " camera positions exported from Kinfu" << endl;
+    cam_output_file << "import numpy as np" << endl;
+    cam_output_file << "cam_postions = [" << endl;
+    unsigned int counter = 0;
+    for (std::vector<Eigen::Affine3f>::const_iterator it = cam_positions_.begin(); it != cam_positions_.end(); ++it) {
+      cam_output_file << "np.array([["
+          << (*it)(0, 0) << ", " << (*it)(0, 1) << ", "
+          << (*it)(0, 2) << ", " << (*it)(0, 3) << "], # cam " << counter << endl << "          ["
+          << (*it)(1, 0) << ", " << (*it)(1, 1) << ", "
+          << (*it)(1, 2) << ", " << (*it)(1, 3) << "]," << endl << "          ["
+          << (*it)(2, 0) << ", " << (*it)(2, 1) << ", "
+          << (*it)(2, 2) << ", " << (*it)(2, 3) << "]," << endl << "          ["
+          << (*it)(3, 0) << ", " << (*it)(3, 1) << ", "
+          << (*it)(3, 2) << ", " << (*it)(3, 3) << "]]),"  << endl;
+      counter++;
+    }
+    cam_output_file << "]" << endl << endl;
+    
+    // This stuff lets us execute the produced python file and it will write out 
+    // a scene for us to examine with view_cam_cloud
+    cam_output_file << "from cam_cloud.scene import Scene" << endl;
+    cam_output_file << "from cam_cloud.camera_set import CameraSet" << endl;
+
+    cam_output_file << "cam_set = CameraSet(cam_positions, remove_trailing_identical=True)" << endl;
+    cam_output_file << "scene = Scene.from_camera_set(cam_set)" << endl;
+
+    cam_output_file << "if __name__ == \"__main__\":" << endl;
+    cam_output_file << "     import sys" << endl;
+    cam_output_file << "     import os.path as osp" << endl;
+    cam_output_file << "     if len(sys.argv) < 2:" << endl;
+    cam_output_file << "          print \"usage: %s <output_file>.cam_cloud\" % sys.argv[0]" << endl;
+    cam_output_file << "          sys.exit(-1)" << endl;
+    cam_output_file << "     scene.save_to_file(osp.abspath(sys.argv[1]))" << endl;
+    cam_output_file.close();
+  }
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void
   startMainLoop (bool triggered_capture)
@@ -949,7 +1002,11 @@ struct KinFuApp
             capture_.start(); // Triggers new frame
         bool has_data = data_ready_cond_.timed_wait (lock, boost::posix_time::millisec(100));        
                        
-        try { this->execute (depth_, rgb24_, has_data); }
+        try {
+          this->execute (depth_, rgb24_, has_data);
+          num_frames_executed_++;
+          store_camera_position();
+        }
         catch (const std::bad_alloc& /*e*/) { cout << "Bad alloc" << endl; break; }
         catch (const std::exception& /*e*/) { cout << "Exception" << endl; break; }
         
@@ -1053,7 +1110,10 @@ struct KinFuApp
   PtrStepSz<const KinfuTracker::PixelRGB> rgb24_;
 
   int time_ms_;
+  int num_frames_executed_;
   int icp_, viz_;
+
+  std::vector<Eigen::Affine3f> cam_positions_;
 
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   static void
@@ -1090,6 +1150,10 @@ struct KinFuApp
         cout << "Saving TSDF volume cloud to tsdf_cloud.pcd ... " << flush;
         pcl::io::savePCDFile<pcl::PointXYZI> ("tsdf_cloud.pcd", *app->tsdf_cloud_ptr_, true);
         cout << "done [" << app->tsdf_cloud_ptr_->size () << " points]" << endl;
+        break;
+      case (int)'k': case (int)'K':
+        cout << "Saving all camera paths so far to camera_paths.txt ..." << flush;
+        app->save_camera_paths();
         break;
 
       default:
