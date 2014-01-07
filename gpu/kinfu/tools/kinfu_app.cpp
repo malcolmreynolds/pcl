@@ -908,9 +908,10 @@ struct KinFuApp
   save_camera_paths() const {
     ofstream cam_output_file;
     cam_output_file.open("camera_paths.py");
+    cam_output_file << "#!/usr/bin/env python" << endl;
     cam_output_file << "# " << num_frames_executed_ << " camera positions exported from Kinfu" << endl;
-    cam_output_file << "import numpy as np"
-    cam_output_file << "camera_paths = [" << endl;
+    cam_output_file << "import numpy as np" << endl;
+    cam_output_file << "cam_postions = [" << endl;
     unsigned int counter = 0;
     for (std::vector<Eigen::Affine3f>::const_iterator it = cam_positions_.begin(); it != cam_positions_.end(); ++it) {
       cam_output_file << "np.array([["
@@ -924,7 +925,23 @@ struct KinFuApp
           << (*it)(3, 2) << ", " << (*it)(3, 3) << "]]),"  << endl;
       counter++;
     }
-    cam_output_file << "]" << endl;
+    cam_output_file << "]" << endl << endl;
+  
+    // This stuff lets us execute the produced python file and it will write out 
+    // a scene for us to examine with view_cam_cloud
+    cout << "from cam_cloud.scene import Scene" << endl;
+    cout << "from cam_cloud.camera_set import CameraSet" << endl;
+
+    cout << "cam_set = CameraSet(cam_positions, remove_trailing_identical=True)" << endl;
+    cout << "scene = Scene.from_camera_set(cam_set)" << endl;
+
+    cout << "if __name__ == \"__main__\":" << endl;
+    cout << "     import sys" << endl;
+    cout << "     import os.path as osp" << endl;
+    cout << "     if len(sys.argv) < 2:" << endl;
+    cout << "          print \"usage: %s <output_file>.cam_cloud\" % sys.argv[0]" << endl;
+    cout << "          sys.exit(-1)" << endl;
+    cout << "     scene.save_to_file(osp.abspath(sys.argv[1]))" << endl;
     cam_output_file.close();
   }
 
