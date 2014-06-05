@@ -39,6 +39,7 @@
 #include <list>
 #include <pcl/visualization/common/io.h>
 #include <pcl/visualization/interactor_style.h>
+#include <vtkVersion.h>
 #include <vtkLODActor.h>
 #include <vtkPolyData.h>
 #include <vtkPolyDataMapper.h>
@@ -357,7 +358,11 @@ pcl::visualization::PCLVisualizerInteractorStyle::OnKeyDown ()
         else
         {
           vtkPolyDataMapper* mapper = static_cast<vtkPolyDataMapper*>(act->actor->GetMapper ());
+#if VTK_MAJOR_VERSION < 6
           mapper->SetInput (data);
+#else
+          mapper->SetInputData (data);
+#endif
           // Modify the actor
           act->actor->SetMapper (mapper);
         }
@@ -386,7 +391,6 @@ pcl::visualization::PCLVisualizerInteractorStyle::OnKeyDown ()
         // Update the data
         vtkPolyData *data = static_cast<vtkPolyData*>(act->actor->GetMapper ()->GetInput ());
         data->GetPointData ()->SetScalars (scalars);
-        data->Update ();
         // Modify the mapper
         if (use_vbos_)
         {
@@ -402,7 +406,11 @@ pcl::visualization::PCLVisualizerInteractorStyle::OnKeyDown ()
           vtkPolyDataMapper* mapper = static_cast<vtkPolyDataMapper*>(act->actor->GetMapper ());
           mapper->SetScalarRange (minmax);
           mapper->SetScalarModeToUsePointData ();
+#if VTK_MAJOR_VERSION < 6
           mapper->SetInput (data);
+#else
+          mapper->SetInputData (data);
+#endif
           // Modify the actor
           act->actor->SetMapper (mapper);
         }
@@ -452,7 +460,7 @@ pcl::visualization::PCLVisualizerInteractorStyle::OnKeyDown ()
                   "    ALT + 0..9 [+ CTRL]  : switch between different geometric handlers (where available)\n"
                   "          0..9 [+ CTRL]  : switch between different color handlers (where available)\n"
                   "\n"
-                  "    SHIFT + left click   : select a point\n"
+                  "    SHIFT + left click   : select a point (start with -use_point_picking)\n"
                   "\n"
                   "          x, X   : toggle rubber band selection mode for left mouse button\n"
           );
@@ -547,10 +555,13 @@ pcl::visualization::PCLVisualizerInteractorStyle::OnKeyDown ()
       cam->GetViewUp (view);
       int *win_pos = Interactor->GetRenderWindow ()->GetPosition ();
       int *win_size = Interactor->GetRenderWindow ()->GetSize ();
-      std::cerr << clip[0]  << "," << clip[1]  << "/" << focal[0] << "," << focal[1] << "," << focal[2] << "/" <<
-                   pos[0]   << "," << pos[1]   << "," << pos[2]   << "/" << view[0]  << "," << view[1]  << "," << view[2] << "/" <<
-                   cam->GetViewAngle () / 180.0 * M_PI  << "/" << win_size[0] << "," << win_size[1] << "/" << win_pos[0] << "," << win_pos[1]
-                << endl;
+      std::cerr <<  "Clipping plane [near,far] "  << clip[0] << ", " << clip[1] << endl <<
+                    "Focal point [x,y,z] " << focal[0] << ", " << focal[1] << ", " << focal[2] << endl <<
+                    "Position [x,y,z] " << pos[0] << ", " << pos[1] << ", " << pos[2] << endl <<
+                    "View up [x,y,z] " << view[0]  << ", " << view[1]  << ", " << view[2] << endl <<
+                    "Camera view angle [degrees] " << cam->GetViewAngle () << endl <<
+                    "Window size [x,y] " << win_size[0] << ", " << win_size[1] << endl <<
+                    "Window position [x,y] " << win_pos[0] << ", " << win_pos[1] << endl;
       break;
     }
     case '=':

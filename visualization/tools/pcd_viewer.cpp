@@ -592,10 +592,14 @@ main (int argc, char** argv)
     // Add every dimension as a possible color
     if (!fcolorparam)
     {
+      int idx = 0;
       for (size_t f = 0; f < cloud->fields.size (); ++f)
       {
         if (cloud->fields[f].name == "rgb" || cloud->fields[f].name == "rgba")
+        {
+          idx = f + 1;
           color_handler.reset (new pcl::visualization::PointCloudColorHandlerRGBField<pcl::PCLPointCloud2> (cloud));
+        }
         else
         {
           if (!isValidFieldName (cloud->fields[f].name))
@@ -606,6 +610,8 @@ main (int argc, char** argv)
         //p->addPointCloud<pcl::PointXYZ> (cloud_xyz, color_handler, cloud_name.str (), viewport);
         p->addPointCloud (cloud, color_handler, origin, orientation, cloud_name.str (), viewport);
       }
+      // Set RGB color handler as default
+      p->updateColorHandlerIndex (cloud_name.str (), idx);
     }
 
     // Additionally, add normals as a handler
@@ -628,7 +634,10 @@ main (int argc, char** argv)
 
     // Reset camera viewpoint to center of cloud if camera parameters were not passed manually and this is the first loaded cloud
     if (i == 0 && !p->cameraParamsSet ())
+    {
       p->resetCameraViewpoint (cloud_name.str ());
+      p->resetCamera ();
+    }
 
     print_info ("[done, "); print_value ("%g", tt.toc ()); print_info (" ms : "); print_value ("%u", cloud->width * cloud->height); print_info (" points]\n");
     print_info ("Available dimensions: "); print_value ("%s\n", pcl::getFieldsList (*cloud).c_str ());
@@ -661,7 +670,7 @@ main (int argc, char** argv)
     float ax_x = 0.0, ax_y = 0.0, ax_z = 0.0;
     pcl::console::parse_3x_arguments (argc, argv, "-ax_pos", ax_x, ax_y, ax_z, false);
     // Draw XYZ axes if command-line enabled
-    p->addCoordinateSystem (axes, ax_x, ax_y, ax_z);
+    p->addCoordinateSystem (axes, ax_x, ax_y, ax_z, "global");
   }
 
   // Clean up the memory used by the binary blob
