@@ -653,7 +653,7 @@ struct KinFuApp
   enum { PCD_BIN = 1, PCD_ASCII = 2, PLY = 3, MESH_PLY = 7, MESH_VTK = 8 };
   
   KinFuApp(pcl::Grabber& source, float vsz, int icp, int viz, boost::shared_ptr<CameraPoseProcessor> pose_processor=boost::shared_ptr<CameraPoseProcessor> () ) : exit_ (false), scan_ (false), scan_mesh_(false), scan_volume_ (false), independent_camera_ (false),
-      registration_ (false), integrate_colors_ (false), focal_length_(-1.f), capture_ (source), scene_cloud_view_(viz), image_view_(viz), time_ms_(0), icp_(icp), viz_(viz), pose_processor_ (pose_processor)
+      registration_ (false), integrate_colors_ (false), focal_length_(-1.f), exit_once_no_data_(false), capture_ (source), scene_cloud_view_(viz), image_view_(viz), time_ms_(0), icp_(icp), viz_(viz), pose_processor_ (pose_processor)
   {    
     //Init Kinfu Tracker
     Eigen::Vector3f volume_size = Vector3f::Constant (vsz/*meters*/);    
@@ -954,20 +954,40 @@ struct KinFuApp
       bool scene_view_not_stopped= viz_ ? !scene_cloud_view_.cloud_viewer_->wasStopped () : true;
       bool image_view_not_stopped= viz_ ? !image_view_.viewerScene_->wasStopped () : true;
           
+      // Lets assume when we have 
+      int loops_with_no_data = 0;
+
       while (!exit_ && scene_view_not_stopped && image_view_not_stopped)
       { 
+        // cout << "before capture_.start() ... " << endl;
         if (triggered_capture)
             capture_.start(); // Triggers new frame
+        // cout << "after capture_.start()" << endl;
         bool has_data = data_ready_cond_.timed_wait (lock, boost::posix_time::millisec(100));        
-                       
+        if (has_data) {
+          loops_with_no_data = 0;
+          cout << "loops_with_no_data = 0" << endl;
+        }
+        else {
+          loops_with_no_data++;
+          cout << "loops_with_no_data = " << loops_with_no_data << endl;  
+        }
+
+        if (exit_once_no_data_ && (loops_with_no_data > 20)) {
+          cout << "probably reached end of file, breaking..." << endl;
+          break;
+        }
+
         try { this->execute (depth_, rgb24_, has_data); }
         catch (const std::bad_alloc& /*e*/) { cout << "Bad alloc" << endl; break; }
         catch (const std::exception& /*e*/) { cout << "Exception" << endl; break; }
-        
+        // cout << "after execute" << endl;
         if (viz_)
             scene_cloud_view_.cloud_viewer_->spinOnce (3);
       }
       
+      cout << "after while(!exit_ ...) loop" << endl;
+
       if (!triggered_capture)     
           capture_.stop (); // Stop stream
     }
@@ -1046,6 +1066,8 @@ struct KinFuApp
   bool registration_;
   bool integrate_colors_;  
   float focal_length_;
+
+  bool exit_once_no_data_;
   
   pcl::Grabber& capture_;
   KinfuTracker kinfu_;
@@ -1174,6 +1196,7 @@ print_cli_help ()
   cout << "    -volume_size <size_in_meters>           : define integration volume size" << endl;
   cout << "    --depth-intrinsics <fx>,<fy>[,<cx>,<cy> : set the intrinsics of the depth camera" << endl;
   cout << "    -save_pose <pose_file.csv>              : write tracked camera positions to the specified file" << endl;
+  cout << "    --exit_once_no_data                     : exit the program when there is no more data" << endl;
   cout << "Valid depth data sources:" << endl; 
   cout << "    -dev <device> (default), -oni <oni_file>, -pcd <pcd_file or directory>" << endl;
   cout << "";
@@ -1271,6 +1294,9 @@ main (int argc, char* argv[])
   if (pc::find_switch (argc, argv, "--save-views") || pc::find_switch (argc, argv, "-sv"))
     app.image_view_.accumulate_views_ = true;  //will cause bad alloc after some time  
   
+  if (pc::find_switch (argc, argv, "--exit_once_no_data") || pc::find_switch (argc, argv, "-exnd"))
+    app.exit_once_no_data_ = true;
+
   if (pc::find_switch (argc, argv, "--registration") || pc::find_switch (argc, argv, "-r"))  
     app.initRegistration();
       
